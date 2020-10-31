@@ -1,0 +1,2 @@
+"0",""
+"0","hist(sim3, freq = F, ylim = c(0, 15), xlab = '', main = 'delta = 0.1')"

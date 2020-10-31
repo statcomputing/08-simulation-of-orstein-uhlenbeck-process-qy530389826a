@@ -1,0 +1,1 @@
+"0","plot(r.new[10, ],type='l',ylim = c(0, 8), ylab='', col=2,main='b =  -5',xlim=c(0,300000))"

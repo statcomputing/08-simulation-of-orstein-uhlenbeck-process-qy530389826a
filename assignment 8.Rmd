@@ -1,0 +1,190 @@
+---
+title: "assignment 8"
+author: "Yong Qiao"
+date: "10/31/2020"
+output: pdf_document
+---
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\Var}{\mathrm{Var}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\newcommand{\dd}{\mathrm{d}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\bx}{\textbf{x}}
+\newcommand{\bX}{\textbf{X}}
+\newcommand{\bz}{\textbf{z}}
+\newcommand{\bbeta}{\boldsymbol{\beta}}
+\newcommand{\bPsi}{\boldsymbol{\Psi}}
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Orstein--Uhlenbeck Process
+Consider the Ornstein-Uhlenbeck process
+\begin{align*}
+  \dd r(t) = \alpha(b - r(t))\,\dd t + \sigma\,\dd W(t),
+\end{align*}
+where $\alpha > 0$, $\sigma > 0$, and $b$ are constants.
+
+1. Show that for $t>0$ and $\Delta>0$,
+  \begin{align*}
+    r(t+\Delta)
+    =
+    e^{-\alpha\Delta} r(t) + b(1-e^{-\alpha\Delta}) + 
+    \frac{\sigma}{\sqrt{2\alpha}} \sqrt{1-e^{-2\alpha\Delta}} Z,
+  \end{align*}
+  where $Z\sim N(0,1)$.
+
+1. Use the transition distribution from the last part
+  to implement a random walk construction for the
+  process on time interval $[0,T]$.  Your code should take $\alpha$, 
+  $\sigma$, $b$, the initial value $r(0)$, $T$, and the time step
+  $\Delta$ of the random walk as input arguments. For $r(0)=1$,
+  $T=500$, and $\Delta = 1/500$, plot a sample path for each
+  combination of the following values,
+  \begin{align*}
+    \alpha \in \{0.1, 1, 5\},\ \sigma \in \{0.1, 0.2, 0.5\},\
+    b\in\{-5, 5\}.
+  \end{align*}
+  Comment on how the behavior of $r(t)$ depends on $\alpha$ and
+  $\sigma$.
+
+1. Use the Euler–Maruyama method (or the Euler method; see Wiki) to approximate
+  a simulation from the process. Specifically, partition the time interval
+  into a grid with subintervals of equal length $\delta > 0$ for a small $\delta$;
+  approximate $r(t + \delta)$ by a normal random variable with mean
+  $r(t) + \alpha(b - r(t)) \delta$ and standard deviation $\sigma \delta$.
+  Write a function to implement this approximation with $\delta$ as one of the
+  arguments. For $\delta \in \{1, 0.5, 0.1, 0.01\}$, generate a sample of size 1000
+  for $r(1)$. Plot the kernel densities against the true density.
+  
+### Solution
+
+1. The general case of Gaussian Markob process is the following
+for the model $$\dd r(t)=[g(t)+h(t)r(t)]\dd t+\sigma (t)\dd W (t)$$
+if $H(t)=\int^{t}_{0}h(s)ds$
+so we have the general solution is 
+$$r(t)=e^{H(t)}r(0)+\int^{t}_{0}e^{H(t)-H(s)}g(s)\dd s+\int^{t}_{0}e^{H(t)-H(s)}\sigma (s)\dd W(s)$$
+in this case we have
+$$r(t)=e^{\alpha t}r(0)+\int^{t}_{0}e^{\alpha (t-s)}b\dd s+\int^{t}_{0}e^{\alpha(t-s)}\sigma (s)\dd W(s)$$
+$$r(t+\Delta)=e^{\alpha (t+\Delta)}r(0)+\int^{t+\Delta}_{0}e^{\alpha (t+\Delta-s)}b\dd s+\int^{t+\Delta}_{0}e^{\alpha(t+\Delta-s)}\sigma (s)\dd W(s)$$
+so we have the following
+$$r(t+\Delta) - e^{-\alpha \Delta} r(t) = b(1- e^{-\alpha \Delta}) + \sigma \int^{t+\Delta}_t e^{-\alpha(t+\Delta-s)}dW(s)$$
+because of $W(s+\Delta s) - W(s) \sim N$ with mean 0
+
+$$E[(\int^{t+\Delta}_t e^{-\alpha (t+\Delta-s)}dW(s))^2] = E[\int^{t+\Delta}_t e^{-2\alpha (t+\Delta-s)}ds] = \frac{(1-e^{-2 \alpha \Delta})}{2\alpha}$$
+$$\sigma \int^{t+\Delta}_t e^{-\alpha(t+\Delta-s)}dW(s) \sim N(0, \frac{\sigma^2}{2\alpha}(1-e^{-2 \alpha \Delta}))$$
+
+\begin{align*}
+    r(t+\Delta)
+    =
+    e^{-\alpha\Delta} r(t) + b(1-e^{-\alpha\Delta}) + 
+    \frac{\sigma}{\sqrt{2\alpha}} \sqrt{1-e^{-2\alpha\Delta}} Z,
+  \end{align*}
+  where $Z\sim N(0,1)$.\
+
+
+2. 
+```{r}
+ou <- function(alpha, sigma, b, r0, t.max, delta) {
+  n <- t.max/delta
+  r <- rep(r0, (n + 1))
+  for(i in 1:n) {   
+    r[i+1] <- exp(-alpha * delta) * r[i] + b * (1 - exp(-alpha * delta)) + 
+      sigma * sqrt((1 - exp(-2 * alpha * delta)) / (2 * alpha))  * rnorm(1)
+  }
+  return(r)
+}
+a <- c(0.1, 1, 5)
+s <- c(0.1, 0.2, 0.5)
+b <- c(-5, 5)
+r <- matrix(NA, 18, 500^2+1) 
+  for (i in 1:2) {
+  for (j in 1:3) {
+    for (k in 1:3) {
+      r[9 * (i - 1) + 3 * (j - 1) + k, ] <- 
+        ou(a[j], s[k], b[i], 1, 500, 1/500)
+    }    
+  }  
+}
+r.new <- r[, -1]
+```
+
+we can plot as the following
+```{r}
+plot(r.new[1, ],type='l',ylim = c(-9, 2), ylab='', col=2,main='b =  5',xlim=c(0,300000))
+lines(r.new[2, ], type='l', col=3)
+lines(r.new[3, ], type='l', col=4)
+lines(r.new[4, ], type='l', col=5)
+lines(r.new[5, ], type='l', col=6)
+lines(r.new[6, ], type='l', col=7)
+lines(r.new[7, ], type='l', col=8)
+lines(r.new[8, ], type='l', col=9)
+lines(r.new[9, ], type='l', col=10)
+legend("right", legend=c('0.1, 0.1', '0.1, 0.2', '0.1, 0.5','1, 0.1', '1, 0.2', '1, 0.5','5, 0.1', '5, 0.2', '5, 0.5'),lty=c(1,1), col=c(2, 3, 4,5,6,7,8,9,10), title="(alpha , sigma)")
+```
+```{r}
+plot(r.new[10, ],type='l',ylim = c(0, 8), ylab='', col=2,main='b =  -5',xlim=c(0,300000))
+lines(r.new[11, ], type='l', col=3)
+lines(r.new[12, ], type='l', col=4)
+lines(r.new[13, ], type='l', col=5)
+lines(r.new[14, ], type='l', col=6)
+lines(r.new[15, ], type='l', col=7)
+lines(r.new[16, ], type='l', col=8)
+lines(r.new[17, ], type='l', col=9)
+lines(r.new[18, ], type='l', col=10)
+legend("right", legend=c('0.1, 0.1', '0.1, 0.2', '0.1, 0.5','1, 0.1', '1, 0.2', '1, 0.5','5, 0.1', '5, 0.2', '5, 0.5'),lty=c(1,1), col=c(2, 3, 4,5,6,7,8,9,10), title="(alpha , sigma)")
+```
+From the picture we can see that as our alpha increase the process more stable
+From the picture we can see that as our sigma increase the process less stable
+
+
+3. 
+```{r}
+euler <- function(alpha, sigma, b, r0, delta) {   
+  n <- 1/delta
+  r <- matrix(r0, 1000, n + 1) 
+  for (i in 1:1000) {
+    for (j in 1:n) {
+      r[i,j+1]<-r[i,j]+alpha*(b-r[i,j])*delta+sigma*delta*rnorm(1)
+      }
+  }
+  return(r)
+}
+a <- 0.1
+s <- 0.1
+b <- 5
+init <- 8
+delta <- c(1, 0.5, 0.1, 0.01)
+mu <- exp(-a * delta[1]) * init + b * (1 - exp(-a * delta[1]))
+sig <- s * sqrt((1 - exp(-2 * a * delta[1])) / (2 * a))
+true <- function (x) {
+  exp(-((x-mu)^2) /(2*sig^2)) / sqrt(2*pi*sig^2)
+}
+delta_is_1 <- euler(a, s, b, init, delta[1])[, 2]
+delta_is_0.5 <- euler(a, s, b, init, delta[2])[, 3]
+delta_is_0.1 <- euler(a, s, b, init, delta[3])[, 11]
+delta_is_0.01 <- euler(a, s, b, init, delta[4])[, 101]
+
+```
+
+```{r}
+plot(density(delta_is_1), col = 1, lwd = 1,ylim=c(0,5))
+curve(true, add = T, col = 2)
+legend('right', legend = c("simulated","true"),lty = c(1, 1), lwd = c(1, 1), col = 1:2)
+```
+```{r}
+plot(density(delta_is_0.5), col = 1, lwd = 1,ylim=c(0,10))
+curve(true, add = T, col = 2)
+legend('right', legend = c("simulated","true"),lty = c(1, 1), lwd = c(1, 1), col = 1:2)
+```
+```{r}
+plot(density(delta_is_0.1), col = 1, lwd = 1,ylim=c(0,15))
+curve(true, add = T, col = 2)
+legend('right', legend = c("simulated","true"),lty = c(1, 1), lwd = c(1, 1), col = 1:2)
+```
+```{r}
+plot(density(delta_is_0.01), col = 1, lwd = 1,ylim=c(0,50))
+curve(true, add = T, col = 2)
+legend('right', legend = c("simulated","true"),lty = c(1, 1), lwd = c(1, 1), col = 1:2)
+```
+
