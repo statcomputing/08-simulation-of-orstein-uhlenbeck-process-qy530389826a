@@ -188,3 +188,72 @@ curve(true, add = T, col = 2)
 legend('right', legend = c("simulated","true"),lty = c(1, 1), lwd = c(1, 1), col = 1:2)
 ```
 
+### Poisson Process
+
+Let $\lambda(t) = \sqrt{t} + e^{-t} \sin(2 \pi t)$
+be the intensity function of Poisson process over $t \in [0, 5]$.
+Let $N(t)$ be the number of events by time $t$.
+
+1. What is the distribution of $N(5)$ and its parameter(s)?
+  Use Mathematica or Maple for integration if needed.
+  
+1. Write a function to simulate from this Poisson process.
+
+1. Generate events from this Poisson process 1,000 times. Pool all
+  the event points together as a sample and plot their kernel density. 
+  Overlay $\lambda(t) / \int_0^5 \lambda(s) \dd s$ with the kernel density.
+  
+
+### Solution
+
+$N(5) \sim Pisson(Z)$
+
+$Z =\int^5_0 \lambda(t)dt = \int^5_0 (\sqrt{t} + e^{-t} \sin(2 \pi t))dt$
+$N(5) \sim Pisson(Z)$
+
+$$
+\begin{aligned}
+\int^5_0 e^{-t} \sin(2 \pi t)dt 
+  &= \frac{(2\pi)^2}{1+(2\pi)^2}(\frac{1}{2\pi} - \frac{e^{-5}}{2\pi})\\
+  &= \frac{(2\pi)(1-e^{-5})}{1+(2\pi)^2}
+\end{aligned}
+$$
+$Z = \frac{2}{3} \times 5^{3/2} + \frac{(2\pi)(1-e^{-5})}{1+(2\pi)^2}$
+$N(5) \sim Pisson(Z)=Pisson(\frac{2}{3} \times 5^{3/2} + \frac{(2\pi)(1-e^{-5})}{1+(2\pi)^2})$
+
+```{r}
+t.max <- 5 
+lambda.0 <- sqrt(t.max) + exp(-t.max)*sin(2*pi*t.max) 
+lambda <- function(t) {
+  sqrt(t) + exp(-t)*sin(2*pi*t)
+} 
+y <- c() 
+sim_poission_q2 <- function(n) {
+  for(i in 1:n) { 
+    n <- rpois(1, lambda.0 * 5) # N
+    if (n > 0) {
+      tau = 5 * sort(runif(n))
+      for (i in 1:length(tau)) {
+        t <- tau[i]
+        if( lambda(t) / lambda.0 > runif(1))
+          y = c(y,t)
+      }
+    }
+  }
+  return(y)
+}  
+```
+
+```{r}
+summulation_1000  <- sim_poission_q2(1000) 
+true_process <- function(t) {
+  (sqrt(t) + exp(-t)*sin(2*pi*t)) / (2*5^(1.5)/3 + 2*pi*(1-exp(-5))/(1+4*(pi^2)))
+} 
+summulation_1000 <- density(summulation_1000)
+plot(summulation_1000,col=2,xlim=c(-1,7),ylim=c(0,0.5))
+curve(true_process, 0, 5, add = T,col=3)
+legend('topright', legend = c("simulated","true"),
+       lty = c(1,1), lwd = c(1,1), col=c(2,3),
+       cex = 0.9)
+```
+
